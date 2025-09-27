@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { User, AppFile, Group, Role } from '../types';
-import { UserIcon, FileIcon, LogoutIcon, UploadIcon, PlusIcon, EyeIcon, GroupIcon, ShieldIcon } from './icons';
+import { UserIcon, FileIcon, LogoutIcon, UploadIcon, PlusIcon, EyeIcon, GroupIcon, ShieldIcon, KeyIcon, LockClosedIcon, LockOpenIcon } from './icons';
 
 interface DashboardProps {
   currentUser: User;
@@ -8,13 +8,15 @@ interface DashboardProps {
   files: AppFile[];
   groups: Group[];
   onLogout: () => void;
-  onRegisterUser: (newUser: Omit<User, 'id'>) => void;
+  onRegisterUser: (newUser: Omit<User, 'id' | 'isActive'>) => void;
   onFileUpload: (newFile: Omit<AppFile, 'id'>) => void;
   onAddGroup: (groupName: string) => void;
   onSetUserRole: (userId: string, role: Role) => void;
+  onChangeUserPassword: (userId: string, newPassword: string) => void;
+  onToggleUserStatus: (userId: string) => void;
 }
 
-const Dashboard: React.FC<DashboardProps> = ({ currentUser, users, files, groups, onLogout, onRegisterUser, onFileUpload, onAddGroup, onSetUserRole }) => {
+const Dashboard: React.FC<DashboardProps> = ({ currentUser, users, files, groups, onLogout, onRegisterUser, onFileUpload, onAddGroup, onSetUserRole, onChangeUserPassword, onToggleUserStatus }) => {
   const [selectedFile, setSelectedFile] = useState<AppFile | null>(null);
 
   // Admin state
@@ -27,6 +29,9 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser, users, files, groups
   const [fileGroup, setFileGroup] = useState(groups[0]?.id || '');
   
   const [newGroupName, setNewGroupName] = useState('');
+  
+  const [passwordChangeUser, setPasswordChangeUser] = useState<User | null>(null);
+  const [newPasswordModalInput, setNewPasswordModalInput] = useState('');
   
   const handleUserRegister = (e: React.FormEvent) => {
     e.preventDefault();
@@ -77,7 +82,6 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser, users, files, groups
     setNewGroupName('');
   };
 
-
   const getGroupName = (groupId: string) => groups.find(g => g.id === groupId)?.name || 'N/A';
   
   const renderFileModal = () => {
@@ -100,6 +104,46 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser, users, files, groups
       </div>
     );
   };
+  
+  const renderPasswordChangeModal = () => {
+    if (!passwordChangeUser) return null;
+
+    const handleSubmit = (e: React.FormEvent) => {
+        e.preventDefault();
+        if (newPasswordModalInput) {
+            onChangeUserPassword(passwordChangeUser.id, newPasswordModalInput);
+            setPasswordChangeUser(null);
+            setNewPasswordModalInput('');
+        }
+    };
+
+    return (
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-75" onClick={() => setPasswordChangeUser(null)}>
+        <div className="w-full max-w-sm p-6 bg-white rounded-lg shadow-xl" onClick={(e) => e.stopPropagation()}>
+           <h3 className="text-lg font-bold">تغییر رمز عبور برای {passwordChangeUser.username}</h3>
+           <form onSubmit={handleSubmit} className="mt-4 space-y-4">
+               <input 
+                   type="password" 
+                   placeholder="رمز عبور جدید" 
+                   value={newPasswordModalInput}
+                   onChange={e => setNewPasswordModalInput(e.target.value)}
+                   required
+                   autoFocus
+                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+               />
+               <div className="flex justify-end gap-4">
+                  <button type="button" onClick={() => setPasswordChangeUser(null)} className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-200 rounded-md hover:bg-gray-300">
+                    انصراف
+                  </button>
+                   <button type="submit" className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-md hover:bg-indigo-700">
+                    ذخیره
+                   </button>
+               </div>
+           </form>
+        </div>
+      </div>
+    );
+};
 
   const AdminView = () => (
     <div className="grid grid-cols-1 gap-8 lg:grid-cols-2">
@@ -147,16 +191,27 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser, users, files, groups
               <ul className="space-y-3 max-h-48 overflow-y-auto">
                 {users.map(u => (
                   <li key={u.id} className="flex items-center justify-between p-2 rounded-md bg-gray-50">
-                    <div>
+                    <div className="flex items-center">
+                       <span title={u.isActive ? "فعال" : "غیرفعال"} className={`mr-3 inline-block h-2.5 w-2.5 rounded-full ${u.isActive ? 'bg-green-500' : 'bg-red-500'}`}></span>
                       <span>{u.username} </span>
-                      <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${u.role === Role.ADMIN ? 'bg-green-100 text-green-800' : 'bg-gray-200 text-gray-700'}`}>{u.role}</span>
+                      <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ml-2 ${u.role === Role.ADMIN ? 'bg-green-100 text-green-800' : 'bg-gray-200 text-gray-700'}`}>{u.role}</span>
                     </div>
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-1">
                         <span className="text-sm text-gray-500">{getGroupName(u.groupId)}</span>
-                        {u.role !== Role.ADMIN && (
-                            <button onClick={() => onSetUserRole(u.id, Role.ADMIN)} title="ارتقا به ادمین" className="p-1 text-gray-500 rounded-full hover:bg-green-100 hover:text-green-700">
-                                <ShieldIcon className="w-5 h-5" />
+                        {currentUser.id !== u.id && (
+                          <>
+                            {u.role !== Role.ADMIN && (
+                                <button onClick={() => onSetUserRole(u.id, Role.ADMIN)} title="ارتقا به ادمین" className="p-1 text-gray-500 rounded-full hover:bg-green-100 hover:text-green-700">
+                                    <ShieldIcon className="w-5 h-5" />
+                                </button>
+                            )}
+                            <button onClick={() => setPasswordChangeUser(u)} title="تغییر رمز عبور" className="p-1 text-gray-500 rounded-full hover:bg-yellow-100 hover:text-yellow-700">
+                                <KeyIcon className="w-5 h-5" />
                             </button>
+                             <button onClick={() => onToggleUserStatus(u.id)} title={u.isActive ? "غیرفعال کردن" : "فعال کردن"} className={`p-1 rounded-full ${u.isActive ? 'text-red-500 hover:bg-red-100' : 'text-green-500 hover:bg-green-100'}`}>
+                                {u.isActive ? <LockClosedIcon className="w-5 h-5" /> : <LockOpenIcon className="w-5 h-5" />}
+                            </button>
+                          </>
                         )}
                     </div>
                   </li>
@@ -211,6 +266,7 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser, users, files, groups
   return (
     <div className="min-h-screen bg-gray-100">
       {renderFileModal()}
+      {renderPasswordChangeModal()}
       <header className="flex items-center justify-between p-4 text-white bg-gray-800 shadow-md">
         <div className="flex items-center gap-3">
           <GroupIcon className="w-8 h-8 text-indigo-400"/>

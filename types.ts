@@ -1,4 +1,3 @@
-
 export enum Role {
   ADMIN = 'ADMIN',
   USER = 'USER',
@@ -15,6 +14,7 @@ export interface User {
   password; 
   role: Role;
   groupId: string;
+  isActive: boolean;
 }
 
 export interface AppFile {

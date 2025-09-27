@@ -15,8 +15,12 @@ function App() {
   const handleLogin = (username: string, password: string) => {
     const user = users.find(u => u.username === username && u.password === password);
     if (user) {
-      setCurrentUser(user);
-      setLoginError(null);
+      if (user.isActive) {
+        setCurrentUser(user);
+        setLoginError(null);
+      } else {
+        setLoginError('حساب کاربری شما غیرفعال شده است');
+      }
     } else {
       setLoginError('نام کاربری یا رمز عبور اشتباه است');
     }
@@ -26,8 +30,8 @@ function App() {
     setCurrentUser(null);
   };
   
-  const handleRegisterUser = (newUser: Omit<User, 'id'>) => {
-    const userWithId: User = { ...newUser, id: `user-${Date.now()}`};
+  const handleRegisterUser = (newUser: Omit<User, 'id' | 'isActive'>) => {
+    const userWithId: User = { ...newUser, id: `user-${Date.now()}`, isActive: true };
     setUsers(prevUsers => [...prevUsers, userWithId]);
   };
   
@@ -53,6 +57,22 @@ function App() {
       )
     );
   };
+  
+  const handleChangeUserPassword = (userId: string, newPassword: string) => {
+    setUsers(prevUsers =>
+      prevUsers.map(user =>
+        user.id === userId ? { ...user, password: newPassword } : user
+      )
+    );
+  };
+
+  const handleToggleUserStatus = (userId: string) => {
+    setUsers(prevUsers =>
+      prevUsers.map(user =>
+        user.id === userId ? { ...user, isActive: !user.isActive } : user
+      )
+    );
+  };
 
   return (
     <div>
@@ -67,6 +87,8 @@ function App() {
           onFileUpload={handleFileUpload}
           onAddGroup={handleAddGroup}
           onSetUserRole={handleSetUserRole}
+          onChangeUserPassword={handleChangeUserPassword}
+          onToggleUserStatus={handleToggleUserStatus}
         />
       ) : (
         <LoginPage onLogin={handleLogin} error={loginError} />

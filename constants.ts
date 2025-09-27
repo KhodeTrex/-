@@ -1,4 +1,3 @@
-
 import { Group, User, AppFile, Role } from './types';
 
 export const GROUPS: Group[] = [
@@ -7,11 +6,11 @@ export const GROUPS: Group[] = [
 ];
 
 export const USERS: User[] = [
-  { id: 'user-admin', username: 'admin', password: 'adminpassword', role: Role.ADMIN, groupId: 'group-1' },
-  { id: 'user-1', username: 'ali', password: 'password1', role: Role.USER, groupId: 'group-1' },
-  { id: 'user-2', username: 'reza', password: 'password1', role: Role.USER, groupId: 'group-1' },
-  { id: 'user-3', username: 'sara', password: 'password2', role: Role.USER, groupId: 'group-2' },
-  { id: 'user-4', username: 'maryam', password: 'password2', role: Role.USER, groupId: 'group-2' },
+  { id: 'user-admin', username: 'admin', password: 'adminpassword', role: Role.ADMIN, groupId: 'group-1', isActive: true },
+  { id: 'user-1', username: 'ali', password: 'password1', role: Role.USER, groupId: 'group-1', isActive: true },
+  { id: 'user-2', username: 'reza', password: 'password1', role: Role.USER, groupId: 'group-1', isActive: true },
+  { id: 'user-3', username: 'sara', password: 'password2', role: Role.USER, groupId: 'group-2', isActive: true },
+  { id: 'user-4', username: 'maryam', password: 'password2', role: Role.USER, groupId: 'group-2', isActive: true },
 ];
 
 export const FILES: AppFile[] = [
