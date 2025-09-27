@@ -1,4 +1,4 @@
-import { Group, User, AppFile, Role } from './types';
+import { Group, User, AppFile, Role, Category } from './types';
 
 export const GROUPS: Group[] = [
   { id: 'group-1', name: 'گروه ۱ (مهندسی)' },
@@ -13,10 +13,17 @@ export const USERS: User[] = [
   { id: 'user-4', username: 'maryam', password: 'password2', role: Role.USER, groupId: 'group-2', isActive: true },
 ];
 
+export const CATEGORIES: Category[] = [
+  { id: 'cat-1', name: 'نقشه‌ها', groupId: 'group-1' },
+  { id: 'cat-2', name: 'گزارش‌های فنی', groupId: 'group-1' },
+  { id: 'cat-3', name: 'قراردادها', groupId: 'group-2' },
+];
+
+
 export const FILES: AppFile[] = [
-  { id: 'file-1', name: 'document_engineering.txt', content: 'This is a top secret engineering document.', type: 'text/plain', groupId: 'group-1' },
-  { id: 'file-2', name: 'project_schema.png', content: 'https://picsum.photos/seed/projects/800/600', type: 'image/png', groupId: 'group-1' },
-  { id: 'file-3', name: 'sales_report_q3.txt', content: 'Sales were up by 20% in the third quarter.', type: 'text/plain', groupId: 'group-2' },
-  { id: 'file-4', name: 'client_presentation.png', content: 'https://picsum.photos/seed/clients/800/600', type: 'image/png', groupId: 'group-2' },
+  { id: 'file-1', name: 'document_engineering.txt', content: 'This is a top secret engineering document.', type: 'text/plain', groupId: 'group-1', categoryId: 'cat-2' },
+  { id: 'file-2', name: 'project_schema.png', content: 'https://picsum.photos/seed/projects/800/600', type: 'image/png', groupId: 'group-1', categoryId: 'cat-1' },
+  { id: 'file-3', name: 'sales_report_q3.txt', content: 'Sales were up by 20% in the third quarter.', type: 'text/plain', groupId: 'group-2', categoryId: 'cat-3' },
+  { id: 'file-4', name: 'client_presentation.png', content: 'https://picsum.photos/seed/clients/800/600', type: 'image/png', groupId: 'group-2', categoryId: 'cat-3' },
   { id: 'file-5', name: 'shared_manual.txt', content: 'This is a shared manual for all engineering staff.', type: 'text/plain', groupId: 'group-1' },
 ];

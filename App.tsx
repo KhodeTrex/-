@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import LoginPage from './components/LoginPage';
 import Dashboard from './components/Dashboard';
-import { USERS, FILES, GROUPS } from './constants';
-import { User, AppFile, Group, Role } from './types';
+import { USERS, FILES, GROUPS, CATEGORIES } from './constants';
+import { User, AppFile, Group, Role, Category } from './types';
 
 function App() {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
@@ -11,6 +11,8 @@ function App() {
   const [users, setUsers] = useState<User[]>(USERS);
   const [files, setFiles] = useState<AppFile[]>(FILES);
   const [groups, setGroups] = useState<Group[]>(GROUPS);
+  const [categories, setCategories] = useState<Category[]>(CATEGORIES);
+
 
   const handleLogin = (username: string, password: string) => {
     const trimmedUsername = username.trim();
@@ -44,6 +46,16 @@ function App() {
     const userWithId: User = { ...newUser, username: trimmedUsername, id: `user-${Date.now()}`, isActive: true };
     setUsers(prevUsers => [...prevUsers, userWithId]);
   };
+
+  const handleDeleteUser = (userId: string) => {
+    if (currentUser?.id === userId) {
+      alert("شما نمی‌توانید حساب کاربری خود را حذف کنید.");
+      return;
+    }
+    if(window.confirm("آیا از حذف این کاربر مطمئن هستید؟")) {
+      setUsers(prevUsers => prevUsers.filter(u => u.id !== userId));
+    }
+  };
   
   const handleFileUpload = (newFile: Omit<AppFile, 'id'>) => {
     const fileWithId: AppFile = { ...newFile, id: `file-${Date.now()}`};
@@ -57,6 +69,18 @@ function App() {
         name: groupName.trim(),
       };
       setGroups(prevGroups => [...prevGroups, newGroup]);
+    }
+  };
+
+  const handleDeleteGroup = (groupId: string) => {
+    const isGroupInUse = users.some(u => u.groupId === groupId) || files.some(f => f.groupId === groupId);
+    if (isGroupInUse) {
+      alert("امکان حذف گروه وجود ندارد زیرا کاربران یا فایل‌هایی به آن اختصاص داده شده‌اند.");
+      return;
+    }
+    if (window.confirm("آیا از حذف این گروه مطمئن هستید؟")) {
+      setGroups(prevGroups => prevGroups.filter(g => g.id !== groupId));
+      setCategories(prevCategories => prevCategories.filter(c => c.groupId !== groupId));
     }
   };
 
@@ -106,6 +130,24 @@ function App() {
     );
   };
 
+  const handleAddCategory = (name: string, groupId: string) => {
+    if (name.trim() && groupId) {
+      const newCategory: Category = {
+        id: `cat-${Date.now()}`,
+        name: name.trim(),
+        groupId,
+      };
+      setCategories(prev => [...prev, newCategory]);
+    }
+  };
+
+  const handleDeleteCategory = (categoryId: string) => {
+    if (window.confirm("آیا از حذف این دسته‌بندی مطمئن هستید؟ فایل‌های موجود در این دسته‌بندی بدون دسته‌بندی خواهند شد.")) {
+      setCategories(prev => prev.filter(c => c.id !== categoryId));
+      setFiles(prevFiles => prevFiles.map(f => f.categoryId === categoryId ? {...f, categoryId: undefined} : f));
+    }
+  };
+
   return (
     <div>
       {currentUser ? (
@@ -114,14 +156,19 @@ function App() {
           users={users}
           files={files}
           groups={groups}
+          categories={categories}
           onLogout={handleLogout}
           onRegisterUser={handleRegisterUser}
+          onDeleteUser={handleDeleteUser}
           onFileUpload={handleFileUpload}
           onAddGroup={handleAddGroup}
+          onDeleteGroup={handleDeleteGroup}
           onSetUserRole={handleSetUserRole}
           onChangeUserPassword={handleChangeUserPassword}
           onChangeUsername={handleChangeUsername}
           onToggleUserStatus={handleToggleUserStatus}
+          onAddCategory={handleAddCategory}
+          onDeleteCategory={handleDeleteCategory}
         />
       ) : (
         <LoginPage onLogin={handleLogin} error={loginError} />

@@ -1,20 +1,25 @@
-import React, { useState } from 'react';
-import { User, AppFile, Group, Role } from '../types';
-import { UserIcon, FileIcon, LogoutIcon, UploadIcon, PlusIcon, EyeIcon, GroupIcon, ShieldIcon, KeyIcon, LockClosedIcon, LockOpenIcon, CogIcon } from './icons';
+import React, { useState, useMemo } from 'react';
+import { User, AppFile, Group, Role, Category } from '../types';
+import { UserIcon, FileIcon, LogoutIcon, UploadIcon, PlusIcon, EyeIcon, GroupIcon, ShieldIcon, KeyIcon, LockClosedIcon, LockOpenIcon, CogIcon, TrashIcon, FolderIcon } from './icons';
 
 interface DashboardProps {
   currentUser: User;
   users: User[];
   files: AppFile[];
   groups: Group[];
+  categories: Category[];
   onLogout: () => void;
   onRegisterUser: (newUser: Omit<User, 'id' | 'isActive'>) => void;
+  onDeleteUser: (userId: string) => void;
   onFileUpload: (newFile: Omit<AppFile, 'id'>) => void;
   onAddGroup: (groupName: string) => void;
+  onDeleteGroup: (groupId: string) => void;
   onSetUserRole: (userId: string, role: Role) => void;
   onChangeUserPassword: (userId: string, newPassword: string) => void;
   onChangeUsername: (userId: string, newUsername: string) => { success: boolean, message: string };
   onToggleUserStatus: (userId: string) => void;
+  onAddCategory: (name: string, groupId: string) => void;
+  onDeleteCategory: (categoryId: string) => void;
 }
 
 interface AdminViewProps {
@@ -22,8 +27,10 @@ interface AdminViewProps {
   users: User[];
   files: AppFile[];
   groups: Group[];
+  categories: Category[];
   getGroupName: (groupId: string) => string;
   onRegisterUser: (e: React.FormEvent) => void;
+  onDeleteUser: (userId: string) => void;
   newUsername: string;
   setNewUsername: (val: string) => void;
   newPassword: string;
@@ -31,23 +38,38 @@ interface AdminViewProps {
   newUserGroup: string;
   setNewUserGroup: (val: string) => void;
   onAddGroup: (e: React.FormEvent) => void;
+  onDeleteGroup: (groupId: string) => void;
   newGroupName: string;
   setNewGroupName: (val: string) => void;
   onFileUpload: (e: React.FormEvent) => void;
   onFileSelect: (e: React.ChangeEvent<HTMLInputElement>) => void;
   fileGroup: string;
   setFileGroup: (val: string) => void;
+  fileCategory: string;
+  setFileCategory: (val: string) => void;
   onSetUserRole: (userId: string, role: Role) => void;
   setPasswordChangeUser: (user: User | null) => void;
   onToggleUserStatus: (userId: string) => void;
+  onAddCategory: (name: string, groupId: string) => void;
+  onDeleteCategory: (categoryId: string) => void;
 }
 
 const AdminView: React.FC<AdminViewProps> = ({
-  currentUser, users, files, groups, getGroupName, onRegisterUser, newUsername, setNewUsername, newPassword, setNewPassword, newUserGroup, setNewUserGroup, onAddGroup, newGroupName, setNewGroupName, onFileUpload, onFileSelect, fileGroup, setFileGroup, onSetUserRole, setPasswordChangeUser, onToggleUserStatus
-}) => (
-    <div className="grid grid-cols-1 gap-8 lg:grid-cols-2">
-      {/* Management Forms */}
-      <div className="space-y-8">
+  currentUser, users, files, groups, categories, getGroupName, onRegisterUser, onDeleteUser, newUsername, setNewUsername, newPassword, setNewPassword, newUserGroup, setNewUserGroup, onAddGroup, onDeleteGroup, newGroupName, setNewGroupName, onFileUpload, onFileSelect, fileGroup, setFileGroup, fileCategory, setFileCategory, onSetUserRole, setPasswordChangeUser, onToggleUserStatus, onAddCategory, onDeleteCategory
+}) => {
+    const [categoryMgmtGroup, setCategoryMgmtGroup] = useState(groups[0]?.id || '');
+    const [newCategoryName, setNewCategoryName] = useState('');
+
+    const handleAddCategory = (e: React.FormEvent) => {
+        e.preventDefault();
+        onAddCategory(newCategoryName, categoryMgmtGroup);
+        setNewCategoryName('');
+    }
+    
+    return (
+    <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
+      {/* Col 1: Management Forms */}
+      <div className="space-y-8 lg:col-span-1">
         {/* Add User */}
         <div className="p-6 bg-white rounded-lg shadow-md">
             <h3 className="flex items-center gap-2 mb-4 text-xl font-semibold text-gray-800"><PlusIcon /> افزودن کاربر جدید</h3>
@@ -61,15 +83,6 @@ const AdminView: React.FC<AdminViewProps> = ({
             </form>
         </div>
         
-        {/* Add Group */}
-        <div className="p-6 bg-white rounded-lg shadow-md">
-            <h3 className="flex items-center gap-2 mb-4 text-xl font-semibold text-gray-800"><GroupIcon /> افزودن گروه جدید</h3>
-            <form onSubmit={onAddGroup} className="space-y-4">
-                <input type="text" placeholder="نام گروه" value={newGroupName} onChange={e => setNewGroupName(e.target.value)} required className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500" />
-                <button type="submit" className="flex items-center justify-center w-full gap-2 px-4 py-2 font-medium text-white bg-indigo-600 rounded-md hover:bg-indigo-700">افزودن گروه</button>
-            </form>
-        </div>
-
         {/* Upload File */}
         <div className="p-6 bg-white rounded-lg shadow-md">
             <h3 className="flex items-center gap-2 mb-4 text-xl font-semibold text-gray-800"><UploadIcon /> بارگذاری فایل جدید</h3>
@@ -78,37 +91,88 @@ const AdminView: React.FC<AdminViewProps> = ({
                 <select value={fileGroup} onChange={e => setFileGroup(e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500">
                     {groups.map(g => <option key={g.id} value={g.id}>{g.name}</option>)}
                 </select>
+                <select value={fileCategory} onChange={e => setFileCategory(e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500">
+                    <option value="">بدون دسته‌بندی</option>
+                    {categories.filter(c => c.groupId === fileGroup).map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                </select>
                 <button type="submit" className="flex items-center justify-center w-full gap-2 px-4 py-2 font-medium text-white bg-indigo-600 rounded-md hover:bg-indigo-700">بارگذاری فایل</button>
             </form>
         </div>
       </div>
       
-      {/* Data Lists */}
-      <div className="space-y-8">
+       {/* Col 2: Group & Category Management */}
+       <div className="space-y-8 lg:col-span-1">
+         {/* Add Group */}
+        <div className="p-6 bg-white rounded-lg shadow-md">
+            <h3 className="flex items-center gap-2 mb-4 text-xl font-semibold text-gray-800"><GroupIcon /> مدیریت گروه‌ها</h3>
+            <form onSubmit={onAddGroup} className="flex gap-2 mb-4">
+                <input type="text" placeholder="نام گروه جدید" value={newGroupName} onChange={e => setNewGroupName(e.target.value)} required className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500" />
+                <button type="submit" className="flex items-center justify-center gap-2 px-4 py-2 font-medium text-white bg-indigo-600 rounded-md hover:bg-indigo-700"><PlusIcon className="w-5 h-5"/></button>
+            </form>
+             <ul className="space-y-2 max-h-48 overflow-y-auto">
+                {groups.map(g => (
+                    <li key={g.id} className="flex items-center justify-between p-2 rounded-md bg-gray-50">
+                        <span>{g.name}</span>
+                        <button onClick={() => onDeleteGroup(g.id)} title="حذف گروه" className="p-1 text-red-500 rounded-full hover:bg-red-100">
+                            <TrashIcon className="w-5 h-5"/>
+                        </button>
+                    </li>
+                ))}
+              </ul>
+        </div>
+        
+        {/* Category Management */}
+        <div className="p-6 bg-white rounded-lg shadow-md">
+            <h3 className="flex items-center gap-2 mb-4 text-xl font-semibold text-gray-800"><FolderIcon /> مدیریت دسته‌بندی‌ها</h3>
+            <select value={categoryMgmtGroup} onChange={e => setCategoryMgmtGroup(e.target.value)} className="w-full px-3 py-2 mb-4 border border-gray-300 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500">
+                {groups.map(g => <option key={g.id} value={g.id}>{g.name}</option>)}
+            </select>
+             <form onSubmit={handleAddCategory} className="flex gap-2 mb-4">
+                <input type="text" placeholder="نام دسته‌بندی جدید" value={newCategoryName} onChange={e => setNewCategoryName(e.target.value)} required className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500" />
+                <button type="submit" className="flex items-center justify-center gap-2 px-4 py-2 font-medium text-white bg-indigo-600 rounded-md hover:bg-indigo-700"><PlusIcon className="w-5 h-5"/></button>
+            </form>
+            <ul className="space-y-2 max-h-48 overflow-y-auto">
+                {categories.filter(c => c.groupId === categoryMgmtGroup).map(c => (
+                     <li key={c.id} className="flex items-center justify-between p-2 rounded-md bg-gray-50">
+                        <span>{c.name}</span>
+                        <button onClick={() => onDeleteCategory(c.id)} title="حذف دسته‌بندی" className="p-1 text-red-500 rounded-full hover:bg-red-100">
+                            <TrashIcon className="w-5 h-5"/>
+                        </button>
+                    </li>
+                ))}
+            </ul>
+        </div>
+       </div>
+
+      {/* Col 3: Data Lists */}
+      <div className="space-y-8 lg:col-span-1">
           <div className="p-6 bg-white rounded-lg shadow-md">
               <h3 className="flex items-center gap-2 mb-4 text-xl font-semibold text-gray-800"><UserIcon /> لیست کاربران</h3>
-              <ul className="space-y-3 max-h-48 overflow-y-auto">
+              <ul className="space-y-3 max-h-96 overflow-y-auto">
                 {users.map(u => (
                   <li key={u.id} className="flex items-center justify-between p-2 rounded-md bg-gray-50">
                     <div className="flex items-center">
                        <span title={u.isActive ? "فعال" : "غیرفعال"} className={`mr-3 inline-block h-2.5 w-2.5 rounded-full ${u.isActive ? 'bg-green-500' : 'bg-red-500'}`}></span>
-                      <span>{u.username} </span>
+                      <span className="font-medium">{u.username} </span>
                       <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ml-2 ${u.role === Role.ADMIN ? 'bg-green-100 text-green-800' : 'bg-gray-200 text-gray-700'}`}>{u.role}</span>
                     </div>
                     <div className="flex items-center gap-1">
                         <span className="text-sm text-gray-500">{getGroupName(u.groupId)}</span>
                         {currentUser.id !== u.id && (
                           <>
-                            {u.role !== Role.ADMIN && (
+                            <button onClick={() => setPasswordChangeUser(u)} title="تغییر رمز عبور" className="p-1 text-gray-500 rounded-full hover:bg-yellow-100 hover:text-yellow-700">
+                                <KeyIcon className="w-5 h-5" />
+                            </button>
+                             <button onClick={() => onToggleUserStatus(u.id)} title={u.isActive ? "غیرفعال کردن" : "فعال کردن"} className={`p-1 rounded-full ${u.isActive ? 'text-gray-500 hover:bg-gray-100' : 'text-gray-500 hover:bg-gray-100'}`}>
+                                {u.isActive ? <LockClosedIcon className="w-5 h-5" /> : <LockOpenIcon className="w-5 h-5" />}
+                            </button>
+                             {u.role !== Role.ADMIN && (
                                 <button onClick={() => onSetUserRole(u.id, Role.ADMIN)} title="ارتقا به ادمین" className="p-1 text-gray-500 rounded-full hover:bg-green-100 hover:text-green-700">
                                     <ShieldIcon className="w-5 h-5" />
                                 </button>
                             )}
-                            <button onClick={() => setPasswordChangeUser(u)} title="تغییر رمز عبور" className="p-1 text-gray-500 rounded-full hover:bg-yellow-100 hover:text-yellow-700">
-                                <KeyIcon className="w-5 h-5" />
-                            </button>
-                             <button onClick={() => onToggleUserStatus(u.id)} title={u.isActive ? "غیرفعال کردن" : "فعال کردن"} className={`p-1 rounded-full ${u.isActive ? 'text-red-500 hover:bg-red-100' : 'text-green-500 hover:bg-green-100'}`}>
-                                {u.isActive ? <LockClosedIcon className="w-5 h-5" /> : <LockOpenIcon className="w-5 h-5" />}
+                            <button onClick={() => onDeleteUser(u.id)} title="حذف کاربر" className="p-1 text-red-500 rounded-full hover:bg-red-100">
+                                <TrashIcon className="w-5 h-5"/>
                             </button>
                           </>
                         )}
@@ -118,51 +182,80 @@ const AdminView: React.FC<AdminViewProps> = ({
               </ul>
           </div>
           <div className="p-6 bg-white rounded-lg shadow-md">
-              <h3 className="flex items-center gap-2 mb-4 text-xl font-semibold text-gray-800"><GroupIcon /> لیست گروه‌ها</h3>
-              <ul className="space-y-3 max-h-48 overflow-y-auto">
-                {groups.map(g => <li key={g.id} className="p-2 rounded-md bg-gray-50"><span>{g.name}</span></li>)}
-              </ul>
-          </div>
-          <div className="p-6 bg-white rounded-lg shadow-md">
               <h3 className="flex items-center gap-2 mb-4 text-xl font-semibold text-gray-800"><FileIcon /> لیست همه فایل‌ها</h3>
-              <ul className="space-y-3 max-h-48 overflow-y-auto">
+              <ul className="space-y-3 max-h-96 overflow-y-auto">
                 {files.map(f => <li key={f.id} className="flex items-center justify-between p-2 rounded-md bg-gray-50"><span>{f.name}</span><span className="text-sm text-gray-500">{getGroupName(f.groupId)}</span></li>)}
               </ul>
           </div>
       </div>
     </div>
-);
+    )
+};
 
 interface UserViewProps {
   currentUser: User;
   files: AppFile[];
+  categories: Category[];
   getGroupName: (groupId: string) => string;
   onSelectFile: (file: AppFile) => void;
 }
 
-const UserView: React.FC<UserViewProps> = ({ currentUser, files, getGroupName, onSelectFile }) => {
+const UserView: React.FC<UserViewProps> = ({ currentUser, files, categories, getGroupName, onSelectFile }) => {
     const userFiles = files.filter(f => f.groupId === currentUser.groupId);
+    const groupCategories = categories.filter(c => c.groupId === currentUser.groupId);
+    
+    const categorizedFiles = useMemo(() => {
+        const result: { category: Category; files: AppFile[] }[] = groupCategories
+            .map(category => ({
+                category,
+                files: userFiles.filter(file => file.categoryId === category.id)
+            }))
+            .filter(group => group.files.length > 0);
+        return result;
+    }, [userFiles, groupCategories]);
+
+    const uncategorizedFiles = useMemo(() => {
+        return userFiles.filter(file => !file.categoryId || !groupCategories.some(c => c.id === file.categoryId));
+    }, [userFiles, groupCategories]);
+
+    const renderFileList = (filesToRender: AppFile[]) => (
+         <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+            {filesToRender.map(file => (
+                <div key={file.id} className="overflow-hidden transition-shadow duration-300 bg-white rounded-lg shadow-md hover:shadow-xl">
+                    <div className="flex items-center justify-center w-full text-indigo-500 bg-indigo-100 h-36">
+                        <FileIcon className="w-16 h-16" />
+                    </div>
+                    <div className="p-4">
+                        <h4 className="font-semibold text-gray-800 truncate">{file.name}</h4>
+                        <p className="text-sm text-gray-500">{file.type}</p>
+                        <button onClick={() => onSelectFile(file)} className="flex items-center justify-center w-full gap-2 px-4 py-2 mt-4 text-sm font-medium text-white bg-indigo-600 rounded-md hover:bg-indigo-700">
+                            <EyeIcon className="w-4 h-4" /> مشاهده
+                        </button>
+                    </div>
+                </div>
+            ))}
+        </div>
+    );
+
     return (
         <div>
-            <h2 className="mb-6 text-2xl font-bold text-gray-800">فایل‌های شما از {getGroupName(currentUser.groupId)}</h2>
+            <h2 className="mb-8 text-3xl font-bold text-gray-800">فایل‌های شما از گروه: {getGroupName(currentUser.groupId)}</h2>
             {userFiles.length === 0 ? (
                 <p className="p-6 text-center text-gray-500 bg-white rounded-lg shadow-md">هیچ فایلی برای گروه شما یافت نشد.</p>
             ) : (
-                <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
-                {userFiles.map(file => (
-                    <div key={file.id} className="overflow-hidden bg-white rounded-lg shadow-md">
-                        <div className="flex items-center justify-center w-full text-indigo-500 bg-indigo-100 h-36">
-                            <FileIcon className="w-16 h-16" />
-                        </div>
-                        <div className="p-4">
-                            <h4 className="font-semibold text-gray-800 truncate">{file.name}</h4>
-                            <p className="text-sm text-gray-500">{file.type}</p>
-                            <button onClick={() => onSelectFile(file)} className="flex items-center justify-center w-full gap-2 px-4 py-2 mt-4 text-sm font-medium text-white bg-indigo-600 rounded-md hover:bg-indigo-700">
-                                <EyeIcon className="w-4 h-4" /> مشاهده
-                            </button>
-                        </div>
-                    </div>
-                ))}
+                <div className="space-y-12">
+                    {categorizedFiles.map(({ category, files }) => (
+                        <section key={category.id}>
+                            <h3 className="pb-2 mb-6 text-2xl font-semibold text-gray-700 border-b-2 border-indigo-200">{category.name}</h3>
+                            {renderFileList(files)}
+                        </section>
+                    ))}
+                    {uncategorizedFiles.length > 0 && (
+                         <section>
+                            <h3 className="pb-2 mb-6 text-2xl font-semibold text-gray-700 border-b-2 border-gray-200">بدون دسته‌بندی</h3>
+                            {renderFileList(uncategorizedFiles)}
+                        </section>
+                    )}
                 </div>
             )}
         </div>
@@ -170,7 +263,7 @@ const UserView: React.FC<UserViewProps> = ({ currentUser, files, getGroupName, o
 };
 
 
-const Dashboard: React.FC<DashboardProps> = ({ currentUser, users, files, groups, onLogout, onRegisterUser, onFileUpload, onAddGroup, onSetUserRole, onChangeUserPassword, onChangeUsername, onToggleUserStatus }) => {
+const Dashboard: React.FC<DashboardProps> = ({ currentUser, users, files, groups, categories, onLogout, onRegisterUser, onDeleteUser, onFileUpload, onAddGroup, onDeleteGroup, onSetUserRole, onChangeUserPassword, onChangeUsername, onToggleUserStatus, onAddCategory, onDeleteCategory }) => {
   const [selectedFile, setSelectedFile] = useState<AppFile | null>(null);
 
   // Admin state
@@ -181,6 +274,7 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser, users, files, groups
 
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
   const [fileGroup, setFileGroup] = useState(groups[0]?.id || '');
+  const [fileCategory, setFileCategory] = useState('');
   
   const [newGroupName, setNewGroupName] = useState('');
   
@@ -225,8 +319,10 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser, users, files, groups
           type: uploadedFile.type,
           content,
           groupId: fileGroup,
+          categoryId: fileCategory || undefined,
         });
         setUploadedFile(null);
+        setFileCategory('');
         (document.getElementById('file-upload') as HTMLInputElement).value = '';
       };
       if (uploadedFile.type.startsWith('image/')) {
@@ -419,8 +515,10 @@ const renderProfileModal = () => {
             users={users}
             files={files}
             groups={groups}
+            categories={categories}
             getGroupName={getGroupName}
             onRegisterUser={handleUserRegister}
+            onDeleteUser={onDeleteUser}
             newUsername={newUsername}
             setNewUsername={setNewUsername}
             newPassword={newPassword}
@@ -428,20 +526,26 @@ const renderProfileModal = () => {
             newUserGroup={newUserGroup}
             setNewUserGroup={setNewUserGroup}
             onAddGroup={handleGroupAdd}
+            onDeleteGroup={onDeleteGroup}
             newGroupName={newGroupName}
             setNewGroupName={setNewGroupName}
             onFileUpload={handleFileUploadSubmit}
             onFileSelect={handleFileSelect}
             fileGroup={fileGroup}
             setFileGroup={setFileGroup}
+            fileCategory={fileCategory}
+            setFileCategory={setFileCategory}
             onSetUserRole={onSetUserRole}
             setPasswordChangeUser={setPasswordChangeUser}
             onToggleUserStatus={onToggleUserStatus}
+            onAddCategory={onAddCategory}
+            onDeleteCategory={onDeleteCategory}
           />
         ) : (
           <UserView
             currentUser={currentUser}
             files={files}
+            categories={categories}
             getGroupName={getGroupName}
             onSelectFile={setSelectedFile}
           />
