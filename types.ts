@@ -11,7 +11,7 @@ export interface Group {
 export interface User {
   id: string;
   username: string;
-  password; 
+  password: string;
   role: Role;
   groupId: string;
   isActive: boolean;

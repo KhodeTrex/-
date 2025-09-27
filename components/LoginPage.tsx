@@ -39,7 +39,7 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin, error }) => {
               />
             </div>
             <div>
-              <label htmlFor="password-_id" className="sr-only">رمز عبور</label>
+              <label htmlFor="password-id" className="sr-only">رمز عبور</label>
               <input
                 id="password-id"
                 name="password"

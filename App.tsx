@@ -13,7 +13,8 @@ function App() {
   const [groups, setGroups] = useState<Group[]>(GROUPS);
 
   const handleLogin = (username: string, password: string) => {
-    const user = users.find(u => u.username === username && u.password === password);
+    const trimmedUsername = username.trim();
+    const user = users.find(u => u.username === trimmedUsername && u.password === password);
     if (user) {
       if (user.isActive) {
         setCurrentUser(user);
@@ -31,7 +32,16 @@ function App() {
   };
   
   const handleRegisterUser = (newUser: Omit<User, 'id' | 'isActive'>) => {
-    const userWithId: User = { ...newUser, id: `user-${Date.now()}`, isActive: true };
+    const trimmedUsername = newUser.username.trim();
+    if (!trimmedUsername) {
+      alert("نام کاربری نمی‌تواند خالی باشد.");
+      return;
+    }
+    if (users.some(u => u.username === trimmedUsername)) {
+      alert(`نام کاربری "${trimmedUsername}" از قبل وجود دارد.`);
+      return;
+    }
+    const userWithId: User = { ...newUser, username: trimmedUsername, id: `user-${Date.now()}`, isActive: true };
     setUsers(prevUsers => [...prevUsers, userWithId]);
   };
   
@@ -67,18 +77,22 @@ function App() {
   };
 
   const handleChangeUsername = (userId: string, newUsername: string): { success: boolean; message: string } => {
-    if (users.some(user => user.username === newUsername && user.id !== userId)) {
+    const trimmedUsername = newUsername.trim();
+    if (!trimmedUsername) {
+      return { success: false, message: 'نام کاربری نمی‌تواند خالی باشد' };
+    }
+    if (users.some(user => user.username === trimmedUsername && user.id !== userId)) {
       return { success: false, message: 'این نام کاربری قبلاً استفاده شده است' };
     }
 
     setUsers(prevUsers =>
       prevUsers.map(user =>
-        user.id === userId ? { ...user, username: newUsername } : user
+        user.id === userId ? { ...user, username: trimmedUsername } : user
       )
     );
 
     if (currentUser?.id === userId) {
-      setCurrentUser(prevUser => prevUser ? { ...prevUser, username: newUsername } : null);
+      setCurrentUser(prevUser => prevUser ? { ...prevUser, username: trimmedUsername } : null);
     }
     
     return { success: true, message: 'نام کاربری با موفقیت تغییر کرد' };
