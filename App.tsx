@@ -66,6 +66,24 @@ function App() {
     );
   };
 
+  const handleChangeUsername = (userId: string, newUsername: string): { success: boolean; message: string } => {
+    if (users.some(user => user.username === newUsername && user.id !== userId)) {
+      return { success: false, message: 'این نام کاربری قبلاً استفاده شده است' };
+    }
+
+    setUsers(prevUsers =>
+      prevUsers.map(user =>
+        user.id === userId ? { ...user, username: newUsername } : user
+      )
+    );
+
+    if (currentUser?.id === userId) {
+      setCurrentUser(prevUser => prevUser ? { ...prevUser, username: newUsername } : null);
+    }
+    
+    return { success: true, message: 'نام کاربری با موفقیت تغییر کرد' };
+  };
+
   const handleToggleUserStatus = (userId: string) => {
     setUsers(prevUsers =>
       prevUsers.map(user =>
@@ -88,6 +106,7 @@ function App() {
           onAddGroup={handleAddGroup}
           onSetUserRole={handleSetUserRole}
           onChangeUserPassword={handleChangeUserPassword}
+          onChangeUsername={handleChangeUsername}
           onToggleUserStatus={handleToggleUserStatus}
         />
       ) : (
