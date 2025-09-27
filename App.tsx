@@ -62,6 +62,12 @@ function App() {
     setFiles(prevFiles => [...prevFiles, fileWithId]);
   };
 
+  const handleDeleteFile = (fileId: string) => {
+    if (window.confirm("آیا از حذف این فایل مطمئن هستید؟")) {
+      setFiles(prevFiles => prevFiles.filter(f => f.id !== fileId));
+    }
+  };
+
   const handleAddGroup = (groupName: string) => {
     if (groupName.trim()) {
       const newGroup: Group = {
@@ -161,6 +167,7 @@ function App() {
           onRegisterUser={handleRegisterUser}
           onDeleteUser={handleDeleteUser}
           onFileUpload={handleFileUpload}
+          onDeleteFile={handleDeleteFile}
           onAddGroup={handleAddGroup}
           onDeleteGroup={handleDeleteGroup}
           onSetUserRole={handleSetUserRole}

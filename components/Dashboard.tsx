@@ -12,6 +12,7 @@ interface DashboardProps {
   onRegisterUser: (newUser: Omit<User, 'id' | 'isActive'>) => void;
   onDeleteUser: (userId: string) => void;
   onFileUpload: (newFile: Omit<AppFile, 'id'>) => void;
+  onDeleteFile: (fileId: string) => void;
   onAddGroup: (groupName: string) => void;
   onDeleteGroup: (groupId: string) => void;
   onSetUserRole: (userId: string, role: Role) => void;
@@ -31,6 +32,7 @@ interface AdminViewProps {
   getGroupName: (groupId: string) => string;
   onRegisterUser: (e: React.FormEvent) => void;
   onDeleteUser: (userId: string) => void;
+  onDeleteFile: (fileId: string) => void;
   newUsername: string;
   setNewUsername: (val: string) => void;
   newPassword: string;
@@ -55,7 +57,7 @@ interface AdminViewProps {
 }
 
 const AdminView: React.FC<AdminViewProps> = ({
-  currentUser, users, files, groups, categories, getGroupName, onRegisterUser, onDeleteUser, newUsername, setNewUsername, newPassword, setNewPassword, newUserGroup, setNewUserGroup, onAddGroup, onDeleteGroup, newGroupName, setNewGroupName, onFileUpload, onFileSelect, fileGroup, setFileGroup, fileCategory, setFileCategory, onSetUserRole, setPasswordChangeUser, onToggleUserStatus, onAddCategory, onDeleteCategory
+  currentUser, users, files, groups, categories, getGroupName, onRegisterUser, onDeleteUser, onDeleteFile, newUsername, setNewUsername, newPassword, setNewPassword, newUserGroup, setNewUserGroup, onAddGroup, onDeleteGroup, newGroupName, setNewGroupName, onFileUpload, onFileSelect, fileGroup, setFileGroup, fileCategory, setFileCategory, onSetUserRole, setPasswordChangeUser, onToggleUserStatus, onAddCategory, onDeleteCategory
 }) => {
     const [categoryMgmtGroup, setCategoryMgmtGroup] = useState(groups[0]?.id || '');
     const [newCategoryName, setNewCategoryName] = useState('');
@@ -184,7 +186,17 @@ const AdminView: React.FC<AdminViewProps> = ({
           <div className="p-6 bg-white rounded-lg shadow-md">
               <h3 className="flex items-center gap-2 mb-4 text-xl font-semibold text-gray-800"><FileIcon /> لیست همه فایل‌ها</h3>
               <ul className="space-y-3 max-h-96 overflow-y-auto">
-                {files.map(f => <li key={f.id} className="flex items-center justify-between p-2 rounded-md bg-gray-50"><span>{f.name}</span><span className="text-sm text-gray-500">{getGroupName(f.groupId)}</span></li>)}
+                {files.map(f => 
+                  <li key={f.id} className="flex items-center justify-between p-2 rounded-md bg-gray-50">
+                    <div className="flex-1 min-w-0">
+                      <p className="font-medium text-gray-800 truncate">{f.name}</p>
+                      <p className="text-sm text-gray-500">{getGroupName(f.groupId)}</p>
+                    </div>
+                    <button onClick={() => onDeleteFile(f.id)} title="حذف فایل" className="flex-shrink-0 p-1 ml-2 text-red-500 rounded-full hover:bg-red-100">
+                      <TrashIcon className="w-5 h-5" />
+                    </button>
+                  </li>
+                )}
               </ul>
           </div>
       </div>
@@ -263,7 +275,7 @@ const UserView: React.FC<UserViewProps> = ({ currentUser, files, categories, get
 };
 
 
-const Dashboard: React.FC<DashboardProps> = ({ currentUser, users, files, groups, categories, onLogout, onRegisterUser, onDeleteUser, onFileUpload, onAddGroup, onDeleteGroup, onSetUserRole, onChangeUserPassword, onChangeUsername, onToggleUserStatus, onAddCategory, onDeleteCategory }) => {
+const Dashboard: React.FC<DashboardProps> = ({ currentUser, users, files, groups, categories, onLogout, onRegisterUser, onDeleteUser, onFileUpload, onDeleteFile, onAddGroup, onDeleteGroup, onSetUserRole, onChangeUserPassword, onChangeUsername, onToggleUserStatus, onAddCategory, onDeleteCategory }) => {
   const [selectedFile, setSelectedFile] = useState<AppFile | null>(null);
 
   // Admin state
@@ -519,6 +531,7 @@ const renderProfileModal = () => {
             getGroupName={getGroupName}
             onRegisterUser={handleUserRegister}
             onDeleteUser={onDeleteUser}
+            onDeleteFile={onDeleteFile}
             newUsername={newUsername}
             setNewUsername={setNewUsername}
             newPassword={newPassword}
